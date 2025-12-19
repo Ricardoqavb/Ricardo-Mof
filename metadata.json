@@ -1,0 +1,5 @@
+{
+  "name": "Pocket Photographer Editor",
+  "description": "A specialized editor for the Master Wine Database with deep nested object support and Gemini AI integration.",
+  "requestFramePermissions": []
+}
