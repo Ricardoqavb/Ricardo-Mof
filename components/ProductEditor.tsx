@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Product } from '../types';
 import HybridField from './HybridField';
 import { Sparkles, Save } from 'lucide-react';
@@ -11,7 +11,13 @@ interface ProductEditorProps {
 }
 
 const ProductEditor: React.FC<ProductEditorProps> = ({ product, onSave, brandContext }) => {
+  // Sincroniza o estado local quando o produto muda (correção importante)
   const [localProduct, setLocalProduct] = useState<Product>(product);
+  
+  useEffect(() => {
+    setLocalProduct(product);
+  }, [product]);
+
   const [isGenerating, setIsGenerating] = useState(false);
 
   const handleFieldChange = (field: keyof Product, value: any) => {
@@ -20,7 +26,11 @@ const ProductEditor: React.FC<ProductEditorProps> = ({ product, onSave, brandCon
 
   const handleAIImprove = async (field: keyof Product) => {
     const currentValue = localProduct[field];
-    if (typeof currentValue !== 'string') return;
+    // Apenas funciona se for string por agora
+    if (typeof currentValue !== 'string') {
+        alert("AI improvement currently only works on text fields. Switch to text mode first.");
+        return;
+    }
     
     setIsGenerating(true);
     const improved = await suggestImprovement(currentValue, brandContext, 'refine');
@@ -29,15 +39,15 @@ const ProductEditor: React.FC<ProductEditorProps> = ({ product, onSave, brandCon
   };
 
   return (
-    <div className="bg-slate-800 border border-slate-700 rounded-lg p-4 space-y-6 shadow-xl">
+    <div className="bg-slate-800 border border-slate-700 rounded-lg p-4 space-y-6 shadow-xl animate-fade-in">
       <div className="flex justify-between items-start border-b border-slate-700 pb-4">
         <div>
           <h3 className="text-lg font-bold text-slate-100">Product Details</h3>
-          <p className="text-xs text-slate-400">Editing: {localProduct.name}</p>
+          <p className="text-xs text-slate-400 font-mono">Editing: {localProduct.name}</p>
         </div>
         <button 
           onClick={() => onSave(localProduct)}
-          className="flex items-center gap-2 bg-amber-600 hover:bg-amber-500 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+          className="flex items-center gap-2 bg-amber-600 hover:bg-amber-500 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors shadow-lg shadow-amber-900/20"
         >
           <Save size={16} /> Save Changes
         </button>
@@ -46,59 +56,50 @@ const ProductEditor: React.FC<ProductEditorProps> = ({ product, onSave, brandCon
       <div className="grid grid-cols-1 gap-6">
         {/* Name */}
         <div className="space-y-1">
-          <label className="text-xs font-semibold text-slate-400 uppercase">Product Name</label>
+          <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Product Name</label>
           <input 
             type="text" 
             value={localProduct.name}
             onChange={(e) => handleFieldChange('name', e.target.value)}
-            className="w-full bg-slate-900 border border-slate-700 rounded-md p-2 text-slate-100 focus:border-amber-500"
+            className="w-full bg-slate-900 border border-slate-700 rounded-md p-2 text-slate-100 focus:border-amber-500 font-medium"
           />
         </div>
 
-        {/* Deep Field: Visual Physics */}
+        {/* 1. VISUAL PHYSICS (Já estava a usar Hybrid, mantém-se) */}
         <HybridField 
-          label="Visual Physics" 
+          label="Visual Physics (The Object)" 
           value={localProduct.visual_physics} 
           onChange={(val) => handleFieldChange('visual_physics', val)} 
         />
 
-        {/* Deep Field: Sensory */}
-        <div className="space-y-1 relative">
-           <label className="text-xs font-semibold text-amber-500 uppercase tracking-wider flex items-center justify-between">
-              Sensory Profile
-              <button onClick={() => handleAIImprove('sensory')} disabled={isGenerating} className="text-amber-500 hover:text-amber-300">
-                <Sparkles size={14} className={isGenerating ? "animate-spin" : ""} />
-              </button>
-           </label>
-           <textarea
-             className="w-full bg-slate-900 border border-slate-700 rounded-md p-3 text-sm text-slate-200 focus:border-amber-500 min-h-[80px]"
-             value={localProduct.sensory as string} // Assuming simple string for now as per majority
-             onChange={(e) => handleFieldChange('sensory', e.target.value)}
-           />
-        </div>
+        {/* 2. SENSORY PROFILE (Agora usa HybridField!) */}
+        <HybridField 
+          label="Sensory Profile (Taste & Texture)" 
+          value={localProduct.sensory} 
+          onChange={(val) => handleFieldChange('sensory', val)} 
+        />
 
-        {/* Narrative */}
-        <div className="space-y-1 relative">
-           <label className="text-xs font-semibold text-amber-500 uppercase tracking-wider flex items-center justify-between">
-              Narrative & Story
-              <button onClick={() => handleAIImprove('narrative')} disabled={isGenerating} className="text-amber-500 hover:text-amber-300">
-                <Sparkles size={14} className={isGenerating ? "animate-spin" : ""} />
-              </button>
-           </label>
-           <textarea
-             className="w-full bg-slate-900 border border-slate-700 rounded-md p-3 text-sm text-slate-200 focus:border-amber-500 min-h-[100px]"
-             value={localProduct.narrative}
-             onChange={(e) => handleFieldChange('narrative', e.target.value)}
-           />
-        </div>
+        {/* 3. NARRATIVE (Agora usa HybridField!) */}
+        <HybridField 
+          label="Narrative & Micro-Stories" 
+          value={localProduct.narrative} 
+          onChange={(val) => handleFieldChange('narrative', val)} 
+        />
 
-        {/* Lighting */}
+        {/* 4. FOOD PAIRING (Novo campo com HybridField!) */}
+        <HybridField 
+          label="Food Pairing Matrix" 
+          value={localProduct.food_pairing || ""} // Garante que não é null
+          onChange={(val) => handleFieldChange('food_pairing', val)} 
+        />
+
+        {/* Lighting (Pode ficar simples ou Hybrid, vamos por simples por agora para variar, ou Hybrid para consistência) */}
         <div className="space-y-1">
-           <label className="text-xs font-semibold text-amber-500 uppercase tracking-wider">Lighting Style</label>
+           <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Lighting Strategy</label>
            <input
              type="text"
              className="w-full bg-slate-900 border border-slate-700 rounded-md p-2 text-sm text-slate-200 focus:border-amber-500"
-             value={localProduct.lighting || ""}
+             value={localProduct.lighting_strategy || localProduct.lighting || ""} // Tenta apanhar legacy key
              onChange={(e) => handleFieldChange('lighting', e.target.value)}
              placeholder="e.g. Chiaroscuro, Backlit, High Noon"
            />
